@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Data Driven Trivia Night</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #f0c040;
+    --accent2: #e0435c;
+    --accent3: #4fc3f7;
+    --text: #f0ede8;
+    --muted: rgba(240,237,232,0.45);
+    --faint: rgba(240,237,232,0.12);
+    --gold: #f0c040;
+    --silver: #a8b8c8;
+    --bronze: #c87840;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(240,192,64,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(79,195,247,0.05) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+  /* ── HEADER ── */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .logo-top {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .logo-main {
+    font-family: var(--font-display);
+    font-size: 36px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .round-pill {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 12px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border-radius: 999px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .btn-next {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-next:hover { background: var(--accent); color: #0a0a0f; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 2rem;
+  }
+  .tab {
+    flex: 1;
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeIn 0.2s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SHARED ── */
+  .row-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+  }
+  .row-card:hover { border-color: var(--border2); }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-size: 14px;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+  }
+  .empty-state .empty-icon {
+    font-size: 32px;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+  }
+
+  /* ── TEAMS PANEL ── */
+  .add-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .add-bar input {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .add-bar input::placeholder { color: var(--muted); }
+  .add-bar input:focus { border-color: var(--accent); }
+  .btn-add {
+    padding: 10px 22px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { opacity: 0.88; }
+  .btn-add:active { transform: scale(0.97); }
+  .teams-list { display: flex; flex-direction: column; gap: 8px; }
+  .team-total {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+    min-width: 72px;
+    text-align: right;
+  }
+  .btn-remove {
+    padding: 5px 11px;
+    background: transparent;
+    border: 1px solid rgba(224,67,92,0.35);
+    color: var(--accent2);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: background 0.15s;
+  }
+  .btn-remove:hover { background: rgba(224,67,92,0.12); }
+
+  /* ── SCORING PANEL ── */
+  .round-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .round-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  select.round-select {
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select.round-select:focus { border-color: var(--accent); }
+  .score-list { display: flex; flex-direction: column; gap: 8px; }
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+  }
+  .score-row:focus-within { border-color: var(--accent); }
+  .score-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .score-input {
+    width: 80px;
+    padding: 7px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .score-input:focus { border-color: var(--accent); }
+  .score-running {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 72px;
+    text-align: right;
+  }
+  .save-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 1.25rem;
+  }
+  .save-hint {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #4ade80;
+    letter-spacing: 0.04em;
+    transition: opacity 0.3s;
+  }
+  .btn-save {
+    padding: 10px 28px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.88; }
+
+  /* ── LEADERBOARD ── */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat-box-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat-box-val {
+    font-family: var(--font-display);
+    font-size: 32px;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: 0.03em;
+  }
+
+  .lb-list { display: flex; flex-direction: column; gap: 10px; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: transform 0.2s, border-color 0.2s;
+    animation: slideIn 0.3s ease both;
+  }
+  @keyframes slideIn { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+  .lb-row:hover { transform: translateX(3px); }
+  .lb-row.rank-1 { border-color: rgba(240,192,64,0.4); background: rgba(240,192,64,0.04); }
+  .lb-row.rank-2 { border-color: rgba(168,184,200,0.35); background: rgba(168,184,200,0.03); }
+  .lb-row.rank-3 { border-color: rgba(200,120,64,0.35); background: rgba(200,120,64,0.03); }
+  .lb-rank {
+    font-family: var(--font-display);
+    font-size: 28px;
+    min-width: 36px;
+    line-height: 1;
+    letter-spacing: 0.03em;
+  }
+  .rank-1 .lb-rank { color: var(--gold); }
+  .rank-2 .lb-rank { color: var(--silver); }
+  .rank-3 .lb-rank { color: var(--bronze); }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .lb-pips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+  }
+  .lb-bar-col { flex: 2; }
+  .lb-bar-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .lb-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .rank-2 .lb-bar-fill { background: var(--silver); }
+  .rank-3 .lb-bar-fill { background: var(--bronze); }
+  .lb-score-col { text-align: right; }
+  .lb-pts {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: 0.03em;
+  }
+  .lb-pts-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer-brand {
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .footer-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+  }
+  .btn-reset {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 5px 14px;
+    background: transparent;
+    border: 1px solid rgba(224,67,92,0.3);
+    color: rgba(224,67,92,0.6);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-reset:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(224,67,92,0.08); }
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+  }
+  .confirm-box h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    color: var(--accent2);
+  }
+  .confirm-box p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+  .btn-confirm-cancel {
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-confirm-cancel:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+  .btn-confirm-reset {
+    padding: 9px 22px;
+    background: var(--accent2);
+    border: none;
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-confirm-reset:hover { opacity: 0.85; }
+
+  @media (max-width: 540px) {
+    .logo-main { font-size: 26px; }
+    .lb-bar-col { display: none; }
+    .stats-strip { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="site-header">
+    <div class="logo">
+      <span class="logo-top">Host Dashboard</span>
+      <span class="logo-main">Data Driven Trivia</span>
+    </div>
+    <div class="header-meta">
+      <span class="round-pill" id="round-badge">ROUND 1</span>
+      <button class="btn-next" onclick="nextRound()">End round &amp; advance →</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('teams')">Teams</button>
+    <button class="tab" onclick="showTab('scoring')">Scoring</button>
+    <button class="tab" onclick="showTab('leaderboard')">Leaderboard</button>
+  </div>
+
+  <!-- TEAMS -->
+  <div class="panel active" id="tab-teams">
+    <p class="section-label">Registered teams</p>
+    <div class="add-bar">
+      <input type="text" id="team-input" placeholder="Enter team name…" onkeydown="if(event.key==='Enter')addTeam()" />
+      <button class="btn-add" onclick="addTeam()">Add team</button>
+    </div>
+    <div class="teams-list" id="teams-list">
+      <div class="empty-state">
+        <div class="empty-icon">🍺</div>
+        No teams registered yet.<br>Add your first team above to get started.
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORING -->
+  <div class="panel" id="tab-scoring">
+    <div class="round-bar">
+      <span class="round-label">Scoring round</span>
+      <select class="round-select" id="round-select" onchange="renderScoring()"></select>
+      <span style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">Enter points per team</span>
+    </div>
+    <div class="score-list" id="score-list">
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        Add teams on the Teams tab first.
+      </div>
+    </div>
+    <div class="save-bar">
+      <span class="save-hint" id="save-hint"></span>
+      <button class="btn-save" onclick="saveScores()">Save round scores</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="panel" id="tab-leaderboard">
+    <div class="stats-strip">
+      <div class="stat-box">
+        <div class="stat-box-label">Teams</div>
+        <div class="stat-box-val" id="stat-teams">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Rounds played</div>
+        <div class="stat-box-val" id="stat-rounds">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Current round</div>
+        <div class="stat-box-val" id="stat-current">1</div>
+      </div>
+    </div>
+    <p class="section-label">Standings</p>
+    <div class="lb-list" id="lb-list">
+      <div class="empty-state">
+        <div class="empty-icon">🏆</div>
+        No scores yet. Score a round to see the leaderboard.
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span class="footer-brand">DATA DRIVEN TRIVIA NIGHT</span>
+    <span class="footer-tag">datadriventrivianight.com</span>
+    <button class="btn-reset" onclick="openReset()">Reset night</button>
+  </footer>
+</div>
+
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h2>Reset everything?</h2>
+    <p>This will clear all teams, scores, and rounds. The night starts fresh. This cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn-confirm-cancel" onclick="closeReset()">Cancel</button>
+      <button class="btn-confirm-reset" onclick="confirmReset()">Yes, reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PALETTES = [
+    ['#f0c040','#0a0a0f'],['#4fc3f7','#0a0a0f'],['#e0435c','#fff'],
+    ['#a78bfa','#0a0a0f'],['#34d399','#0a0a0f'],['#fb923c','#0a0a0f'],
+    ['#f472b6','#0a0a0f'],['#60a5fa','#0a0a0f']
+  ];
+
+  let teams = [], scores = {}, currentRound = 1, totalRounds = 1;
+
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  }
+
+  function getTotal(id) {
+    if (!scores[id]) return 0;
+    return Object.values(scores[id]).reduce((a,b) => a + (Number(b)||0), 0);
+  }
+
+  function getRoundsPlayed() {
+    let max = 0;
+    teams.forEach(t => {
+      if (!scores[t.id]) return;
+      Object.keys(scores[t.id]).forEach(r => {
+        const v = scores[t.id][r];
+        if (v !== '' && v !== undefined) max = Math.max(max, Number(r));
+      });
+    });
+    return max;
+  }
+
+  function showTab(name) {
+    ['teams','scoring','leaderboard'].forEach((n,i) => {
+      document.querySelectorAll('.tab')[i].classList.toggle('active', n === name);
+      document.getElementById('tab-' + n).classList.toggle('active', n === name);
+    });
+    if (name === 'scoring') { initRoundSelect(); renderScoring(); }
+    if (name === 'leaderboard') renderLeaderboard();
+    if (name === 'teams') renderTeams();
+  }
+
+  function addTeam() {
+    const inp = document.getElementById('team-input');
+    const name = inp.value.trim();
+    if (!name) return;
+    if (teams.find(t => t.name.toLowerCase() === name.toLowerCase())) {
+      inp.style.borderColor = 'var(--accent2)';
+      setTimeout(() => inp.style.borderColor = '', 1200);
+      return;
+    }
+    teams.push({ id: Date.now().toString(), name });
+    inp.value = '';
+    renderTeams();
+  }
+
+  function removeTeam(id) {
+    teams = teams.filter(t => t.id !== id);
+    delete scores[id];
+    renderTeams();
+  }
+
+  function renderTeams() {
+    const el = document.getElementById('teams-list');
+    if (!teams.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🍺</div>No teams registered yet.<br>Add your first team above to get started.</div>`;
+      return;
+    }
+    el.innerHTML = teams.map((t, i) => {
+      const [bg, fg] = PALETTES[i % PALETTES.length];
+      const total = getTotal(t.id);
+      return `<div class="row-card">
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(t.name)}</div>
+        <span style="flex:1;font-size:14px;font-weight:500">${t.name}</span>
+        <span class="team-total">${total} pts</span>
+        <button class="btn-remove" onclick="removeTeam('${t.id}')">Remove</button>
+      </div>`;
+    }).join('');
+  }
+
+  function initRoundSelect() {
+    const sel = document.getElementById('round-select');
+    sel.innerHTML = '';
+    for (let r = 1; r <= totalRounds; r++) {
+      const opt = document.createElement('option');
+      opt.value = r; opt.textContent = 'Round ' + r;
+      if (r === currentRound) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function renderScoring() {
+    const el = document.getElementById('score-list');
+    const round = Number(document.getElementById('round-select')?.value || currentRound);
+    if (!teams.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div>Add teams on the Teams tab first.</div>`;
+      return;
+    }
+    el.innerHTML = teams.map((t, i) => {
+      const [bg, fg] = PALETTES[i % PALETTES.length];
+      const val = (scores[t.id] && scores[t.id][round] !== undefined) ? scores[t.id][round] : '';
+      const total = getTotal(t.id);
+      return `<div class="score-row">
+        <div class="avatar" style="background:${bg};color:${fg};width:30px;height:30px;font-size:10px">${initials(t.name)}</div>
+        <span class="score-name">${t.name}</span>
+        <input type="number" class="score-input" id="inp-${t.id}" min="0" max="9999"
+          placeholder="0" value="${val}"
+          onkeydown="if(event.key==='Enter')saveScores()" />
+        <span class="score-running">Total: ${total}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function saveScores() {
+    const round = Number(document.getElementById('round-select')?.value || currentRound);
+    teams.forEach(t => {
+      const inp = document.getElementById('inp-' + t.id);
+      if (!inp) return;
+      if (!scores[t.id]) scores[t.id] = {};
+      scores[t.id][round] = inp.value === '' ? '' : Math.max(0, Number(inp.value));
+    });
+    const hint = document.getElementById('save-hint');
+    hint.textContent = '✓ Saved';
+    setTimeout(() => hint.textContent = '', 2500);
+    renderScoring();
+  }
+
+  function nextRound() {
+    saveScores();
+    totalRounds++;
+    currentRound = totalRounds;
+    document.getElementById('round-badge').textContent = 'ROUND ' + currentRound;
+    initRoundSelect();
+    renderScoring();
+    showTab('scoring');
+  }
+
+  function renderLeaderboard() {
+    document.getElementById('stat-teams').textContent = teams.length;
+    document.getElementById('stat-rounds').textContent = getRoundsPlayed();
+    document.getElementById('stat-current').textContent = currentRound;
+    const el = document.getElementById('lb-list');
+    if (!teams.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏆</div>No scores yet. Score a round to see the leaderboard.</div>`;
+      return;
+    }
+    const ranked = teams.map(t => ({
+      ...t,
+      total: getTotal(t.id),
+      roundScores: scores[t.id] || {},
+      idx: teams.indexOf(t)
+    })).sort((a, b) => b.total - a.total);
+    const maxPts = ranked[0]?.total || 1;
+    el.innerHTML = ranked.map((t, i) => {
+      const [bg, fg] = PALETTES[t.idx % PALETTES.length];
+      const rankClass = i < 3 ? 'rank-' + (i+1) : '';
+      const rankLabel = i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : (i+1)+'';
+      const barPct = maxPts > 0 ? Math.round((t.total / maxPts) * 100) : 0;
+      const pips = Object.entries(t.roundScores).filter(([,v]) => v !== '').map(([r,v]) =>
+        `<span class="pip">R${r} · ${v}</span>`
+      ).join('');
+      return `<div class="lb-row ${rankClass}" style="animation-delay:${i*0.06}s">
+        <div class="lb-rank">${rankLabel}</div>
+        <div class="avatar" style="background:${bg};color:${fg}">${initials(t.name)}</div>
+        <div class="lb-info">
+          <div class="lb-name">${t.name}</div>
+          <div class="lb-pips">${pips || '<span class="pip" style="opacity:.5">no scores yet</span>'}</div>
+        </div>
+        <div class="lb-bar-col">
+          <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${barPct}%"></div></div>
+        </div>
+        <div class="lb-score-col">
+          <div class="lb-pts">${t.total}</div>
+          <div class="lb-pts-label">pts</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openReset() {
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+  function closeReset() {
+    document.getElementById('confirm-overlay').classList.remove('open');
+  }
+  function confirmReset() {
+    teams = []; scores = {}; currentRound = 1; totalRounds = 1;
+    document.getElementById('round-badge').textContent = 'ROUND 1';
+    closeReset();
+    showTab('teams');
+    renderTeams();
+  }
+
+  renderTeams();
+</script>
+</body>
+</html>
