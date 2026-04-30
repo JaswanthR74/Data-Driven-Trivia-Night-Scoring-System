@@ -1,7 +1,7 @@
 # Data-Driven-Trivia-Night-Scoring-System
 
 Simple steps to open the scoring system
-1. Find the file in the github
+1. Find the file-"trivianight.html" in the github
 2. Download the file
 3. open the downloaded file in your device
 
